@@ -1,0 +1,491 @@
+ExploreData by CerenDumen
+========================================================
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
+# Load all of the packages that you end up using in your analysis in this code
+# chunk.
+
+# Notice that the parameter "echo" was set to FALSE for this code chunk. This
+# prevents the code from displaying in the knitted HTML output. You should set
+# echo=FALSE for all code chunks in your file, unless it makes sense for your
+# report to show the code that generated a particular plot.
+
+# The other parameters for "message" and "warning" should also be set to FALSE
+# for other code chunks once you have verified that each plot comes out as you
+# want it to. This will clean up the flow of your report.
+
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
+
+
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE,Load_the_Data}
+# Load the Data
+rw <- read.csv('wineQualityReds.csv')
+
+```
+
+# Description of Dataset
+
+In this project, I will try to explore a dataset based on red wines quality. Main aim is to identify effect of chemical properties on the quality level of red wines.
+
+# Structure of Dataset
+
+```{r echo=FALSE, message=FALSE, warning=FALSE,Structure_of_Dataset}
+str(rw)
+summary(rw)
+
+
+```
+
+Here, it is seen that dataset contains 1599 observations with 13 variables. Actually, quality and x should not be count as chemical properties.Then, there are 11 chemical variables that may affect red wine quality. y.
+
+Quality  can be used as identifer for further investigation.
+
+Now, every chemical factor will be plotted to understand their distribution over 1599 data points.
+
+
+## Total Acidity Calculation 
+
+Because there are three variables corresponding to acidity, it would be helpfull to create new variable, total acidity. 
+Then it can be investigated quality change according to total acidity level.
+
+```{r echo=FALSE,message=FALSE, warning=FALSE, Total_Acidity}
+rw1 <-rw
+rw1$total.acidity <- rw$fixed.acidity + rw$volatile.acidity + rw$citric.acid
+
+head(rw1$total.acidity)
+
+```
+
+## Plots of Every Chemical Variables
+
+Before detailed exploration, basic gplot/histogram of every variable in dataset should be drawn.
+
+```{r echo=FALSE,message=FALSE, warning=FALSE, Univariate_Plots_1}
+
+p1 <- qplot(data = rw1, fixed.acidity, xlab = 'fixed.acidity (g / dm^3)')
+p1
+p2 <- qplot(data = rw1, volatile.acidity, xlab = 'volatile.acidity (g / dm^3)')
+p2
+p3 <- qplot(data = rw1, citric.acid, xlab = 'citric.acid (g / dm^3)')
+p3
+p4 <- qplot(data = rw1, total.acidity, xlab = 'total.acidity (g / dm^3)')
+p4
+p5 <- qplot(data = rw1, residual.sugar, xlab = 'residual.sugar (g / dm^3)')
+p5
+p6 <- qplot(data = rw1, chlorides, xlab = 'chlorides (g / dm^3)')
+p6
+p7 <- qplot(data = rw1, free.sulfur.dioxide, xlab = 'free.sulfur.dioxide (mg / dm^3)')
+p7
+p8 <- qplot(data = rw1, total.sulfur.dioxide, xlab = 'total.sulfur.dioxide (mg / dm^3)')
+p8
+p9 <- qplot(data = rw1, density, xlab = 'density (g / dm^3)')
+p9
+p10 <- qplot(data = rw1, pH)
+p10
+p11 <- qplot(data = rw1, sulphates, xlab = 'sulpahtes (g / dm^3)')
+p11
+p12 <- qplot(data = rw1, alcohol, xlab = 'alcohol (% volume)')
+p12
+p13 <- qplot(data = rw1, quality)
+p13
+
+
+grid.arrange(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, ncol = 4)
+
+
+```
+
+## Plot Investigation
+
+In the previous section, I have performed gplot operation to see each variable distribution over the dataset. Each variable distribution can be seen seperately and also in the grid plot, all variables can be seen in one plot. Grid option makes easy to have a impression at the first glance about all variables.
+
+From the above plots, it can be said that;
+
+* Citric.acid has lots of zero values.
+* pH, sulphates and density have normal distribution however they have some outliers but not that efficient.
+* residual.sugar, chlorides, free.sulfur.dioxide and alcohol have outliers that should be eliminated.
+* quality is condensated at the values 5 and 6.
+
+## Zero Value Identification
+
+```{r echo=FALSE, message=FALSE, warning=FALSE,Removing_zeros}
+
+length(subset(rw1, citric.acid == 0)$citric.acid)
+
+
+```
+
+Citric.acid has 132 zero values.
+
+
+## Outlier Identification
+
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE,Removing_Outlier}
+
+ggplot(data = rw1, aes(x = residual.sugar)) +
+  geom_histogram() +
+  scale_x_continuous(lim = c(0.5, quantile(rw1$residual.sugar, 0.95))) +
+  xlab('residual.sugar (g / dm^3)')
+
+ggplot(data = rw1, aes(x = chlorides)) +
+  geom_histogram() +
+  scale_x_continuous(lim = c(0.04, quantile(rw1$chlorides, 0.95))) +
+  xlab('chlorides (g / dm^3)')
+
+
+ggplot(data = rw1, aes(x = free.sulfur.dioxide)) +
+  geom_histogram() +
+  scale_x_continuous(lim = c(0.04, quantile(rw1$free.sulfur.dioxide, 0.95))) +
+  xlab('free.sulfur.dioxide (g / dm^3)')
+
+ggplot(data = rw1, aes(x = alcohol)) +
+  geom_histogram() +
+  scale_x_continuous(lim = c(0.5, quantile(rw1$alcohol, 0.95))) +
+  xlab('alcohol (g / dm^3)')
+
+
+```
+
+I have done ggplot analysis here because with the ggplot it is much more easy to observe chracteristics and outlier behaviour. 
+After performing outlier removal, it is seen that chlorides has also normal distribution.
+
+## Quality Definition
+
+In order to make plots and analysis more easy to understand, I have decided to create a new variable called as quality. Rating definition is based on quality level. I have named average, ideal and perfect rating levels and if quality is equal and less than 5 then wine rating is average. If quality is greater than 7, it means its rating is perfect and other values are named as ideal level.
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE,Quality_Range_Definition}
+
+
+rw1$rating <- ifelse(rw1$quality <= 5, 'average', ifelse(
+  rw1$quality <= 7, 'ideal', 'perfect'))
+
+rw1$rating <- ordered(rw1$rating, levels = c('average', 'ideal', 'perfect'))
+
+ggplot(data = rw1, aes(x = as.factor(rating), fill = rating)) +
+  geom_bar() +
+  theme_minimal() +
+  scale_fill_brewer(type = 'seq', palette = 8)
+
+summary(rw1$rating)
+summary(rw1$quality)
+
+
+```
+
+
+# Univariate Analysis
+
+
+### What is the structure of your dataset?
+
+str(rw1)
+
+The dataset has 13 variables regarding 1599 observations. Each observation corresponds to a red wine sample. 11 variables correspond to the result of a physicochemical test and one variable (quality) corresponds to the result of a sensory panel rating. And the x is an unique identifier. All the variables in the dataset have numeric values except X and quality which are integer.
+
+### What is/are the main feature(s) of interest in your dataset?
+
+The main feature is the quality.
+
+### What other features in the dataset do you think will help support your \investigation into your feature(s) of interest?
+
+All of them are related to characteristics which may affect the flavor of the wine. Some variables may have strong correlation with each other.
+
+
+### Did you create any new variables from existing variables in the dataset?
+
+Yes. I have created total.acidity to see the level of acid.
+
+
+### Of the features you investigated, were there any unusual distributions? \Did you perform any operations on the data to tidy, adjust, or change the form \of the data? If so, why did you do this?
+
+In the dataset, there is no missing values. There are only zero values and some outliers stated in previous part.
+
+# Bivariate Plots Section
+
+
+## Bivariate Plot Sections based on Rating
+
+In this section, I have performed box plot based on defined rating variable.
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE,Bivariate_Plots}
+
+
+rating_plot <- function(x, y, ylab) {
+  return (ggplot(data = rw1, aes(x, y)) +
+           geom_boxplot(fill = 'orange') +
+            xlab('rating') +
+            ylab(ylab))
+}
+
+grid.arrange(rating_plot(rw1$rating, rw1$fixed.acidity, 'fixed.acidity (g / dm^3)'),
+             rating_plot(rw1$rating, rw1$volatile.acidity, 
+                         'volatile.acidity (g / dm^3)'),
+             rating_plot(rw1$rating, rw1$citric.acid, 'citric.acid (g / dm^3)'),
+             rating_plot(rw1$rating, rw1$residual.sugar, 'residual.sugar (g / dm^3)'),
+             rating_plot(rw1$rating, rw1$chlorides, 'chlorides (g / dm^3)'),
+             rating_plot(rw1$rating, rw1$free.sulfur.dioxide, 
+                         'free.sulfur.dioxide (mg / dm^3)'),
+             rating_plot(rw1$rating, rw1$total.sulfur.dioxide, 
+                         'total.sulfur.dioxide (mg / dm^3)'),
+             rating_plot(rw1$rating, rw1$density, 'density (g / cm^3)'),
+             rating_plot(rw1$rating, rw1$pH, 'pH'),
+             rating_plot(rw1$rating, rw1$sulphates, 'sulphates (g / dm^3)'),
+             rating_plot(rw1$rating, rw1$alcohol, 'alcohol (% volume)'),
+             rating_plot(rw1$rating, rw1$total.acidity, 'alcohol (% volume)'),
+             ncol = 4)
+
+
+
+
+```
+
+## Correlations
+
+In this section, correlation test is performed in order to see the relationships of each chemical variables with quality factor. Correlation analysis is performed according to quality because in this project factors that are effecting wine quality are investigated. And correlation can give us a basic impression about possible effectsve variables.
+
+```{r echo=FALSE,message=FALSE, warning=FALSE, correlations}
+
+correlations <- c(cor.test(rw1$fixed.acidity, rw1$quality)$estimate,
+                  cor.test(rw1$volatile.acidity, rw1$quality)$estimate,
+                  cor.test(rw1$citric.acid, rw1$quality)$estimate,
+                  cor.test(rw1$residual.sugar, rw1$quality)$estimate,
+                  cor.test(rw1$chlorides, rw1$quality)$estimate,
+                  cor.test(rw1$free.sulfur.dioxide, rw1$quality)$estimate,
+                  cor.test(rw1$total.sulfur.dioxide, rw1$quality)$estimate,
+                  cor.test(rw1$density, rw1$quality)$estimate,
+                  cor.test(rw1$pH, rw1$quality)$estimate,
+                  cor.test(rw1$sulphates, rw1$quality)$estimate,
+                  cor.test(rw1$alcohol, rw1$quality)$estimate,
+                  cor.test(rw1$total.acidity, rw1$quality)$estimate)
+
+names(correlations) <- c('fixed.acidity', 'volatile.acidity', 'citric.acid',
+                         'residual.sugar', 'chlorides', 'free.sulfur.dioxide',
+                         'total.sulfur.dioxide', 'density', 'pH',
+                         'sulphates', 'alcohol', 'total.acidity')
+correlations
+
+```
+
+From correlation analysis, it is seen that alcohol is the one mostly related to wine quality with the correlation factor 0.4762.And volatile acidity is the factor that effect wine quality in a negative way with the correlation factor -0.39055. And resudial sugar looks like it has no effect on wine quality because it has correlation value 0.013731 which is the smallest value and close to zero.
+
+# Bivariate Analysis
+
+
+### Talk about some of the relationships you observed in this part of the \investigation. How did the feature(s) of interest vary with other features in \the dataset?
+
+From box plot, rating characteristics can be observed. For example, poor ratig has a characteristics of lower fixed.acidity, higher volatile.acidity and lower citric.acid
+
+### Did you observe any interesting relationships between the other features \ (not the main feature(s) of interest)?
+
+From correlation result, it is seen that quality has  strong relationship with alcohol. In addition, it has a positive relationship with chlorides, citric.acid and fixed.acidity. However, quality hahs a negative relationship with viotile.acidity.
+
+### What was the strongest relationship you found?
+
+Strongest relationship of quality is with alcohol. It is also stated in previous question.
+
+# Multivariate Plots Section
+
+In that part, positive correlated and negative correlated variables will be plotted to see correlation results graphically.
+
+## Positive Correlations
+
+```{r echo=FALSE,message=FALSE, warning=FALSE, Multivariate_Plots}
+
+
+ggplot(data = rw1, aes(alcohol, citric.acid, color = as.factor(quality))) +
+  geom_point() +
+  facet_wrap(~rating) +
+  xlab('alcohol (% volume)') +
+  ylab('citric.acid (g / dm^3)') +
+  scale_color_brewer(type = 'seq', palette = 2) 
+
+ggplot(data = rw1, aes(alcohol, sulphates, color = as.factor(quality))) +
+  geom_point() +
+  facet_wrap(~rating) +
+  xlab('alcohol (% volume)') +
+  ylab('sulphates (g / dm^3)') +
+  scale_color_brewer(type = 'seq', palette = 3) 
+
+
+ggplot(data = rw1, aes(alcohol, fixed.acidity, color = as.factor(quality))) +
+  geom_point() +
+  facet_wrap(~rating) +
+  xlab('alcohol (g / dm^3)') +
+  ylab('fixed.acid (g / dm^3)')  +
+  scale_color_brewer(type = 'seq', palette = 4) 
+
+```
+
+## Negative Correlations 
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE,Multivariate_Plots_2}
+
+
+ggplot(data = rw1, aes(alcohol, pH, color = as.factor(quality))) +
+  geom_point() +
+  facet_wrap(~rating) +
+  xlab('alcohol (g / dm^3)') +
+  ylab('pH (% volume)') +
+  scale_color_brewer(type = 'seq', palette = 1) 
+  
+ggplot(data = rw1, aes( alcohol, chlorides, color = as.factor(quality))) +
+  geom_point() +
+  facet_wrap(~rating) +
+  xlab('alcohol (g / dm^3)') +
+  ylab('chlorides (% volume)') +
+  scale_color_brewer(type = 'seq', palette = 2) 
+
+ggplot(data = rw1, aes(alcohol, free.sulfur.dioxide, color = as.factor(quality))) +
+  geom_point() +
+  facet_wrap(~rating) +
+  xlab('alcohol (g / dm^3)') +
+  ylab('free.sulfur.dioxide (% volume)') +
+  scale_color_brewer(type = 'seq', palette = 3) 
+
+
+ggplot(data = rw1, aes(alcohol, total.sulfur.dioxide, color = as.factor(quality))) +
+  geom_point() +
+  facet_wrap(~rating) +
+  xlab('alcohol (g / dm^3)') +
+  ylab('total.sulfur.dioxide (% volume)') +
+  scale_color_brewer(type = 'seq', palette = 4) 
+
+
+
+```
+
+## Resudial Sugar  
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE,Multivariate_Plots_3}
+
+ggplot(data = rw1, aes(alcohol, residual.sugar, color = as.factor(quality))) +
+  geom_point() +
+  facet_wrap(~rating) +
+  xlab('alcohol (g / dm^3)') +
+  ylab('residual.sugar (% volume)') +
+  scale_color_brewer(type = 'seq', palette = 4) 
+
+
+```
+
+# Multivariate Analysis
+
+### Talk about some of the relationships you observed in this part of the \investigation. Were there features that strengthened each other in terms of \looking at your feature(s) of interest?
+
+Highly correlated variables  citric.acid, fixed.acidity, sulphates and alcohol have been plotted regarding to rating variable.
+
+
+### Were there any interesting or surprising interactions between features?
+
+It is unclear that the interaction of resudial.sugar with the wine quality. Because it is correlation with wine quality is almost zero and how it effects the wine quality is not known.
+
+### OPTIONAL: Did you create any models with your dataset? Discuss the \strengths and limitations of your model.
+
+------
+
+# Final Plots and Summary
+
+
+### Plot One Quality vs Alcohol
+
+```{r echo=FALSE,message=FALSE, warning=FALSE, Plot_One}
+
+ggplot(data = rw1, aes(as.factor(quality), alcohol, fill = rating)) +
+  geom_boxplot() +
+  ggtitle('Alcohol Levels Effect on Wine Quality') +
+  xlab('Quality') +
+  ylab('Alcohol (% volume)') +
+  scale_fill_brewer(type = 'seq', palette = 1)
+
+```
+
+### Description One
+
+Since alcohol has high correlation with quality, it should be better to see characteristics of the variables.
+From plot, it is seen that high alcohol levels gives better level of quality.
+
+
+### Plot Two Acidity Level
+
+```{r echo=FALSE, message=FALSE, warning=FALSE,Plot_Two}
+
+grid.arrange(ggplot(data = rw1, aes(as.factor(quality), fixed.acidity, fill = rating)) +
+               geom_boxplot() +
+               xlab("Quality") +
+               ylab("Fixed Acidity (g / dm^3)") +
+              scale_fill_brewer(type = 'seq', palette = 1),
+             ggplot(data = rw1, aes(as.factor(quality), volatile.acidity, fill = rating)) +
+               geom_boxplot() +
+               xlab("Quality") +
+               ylab("Volatile Acidity (g / dm^3)") +
+              scale_fill_brewer(type = 'seq', palette = 2),
+             ggplot(data = rw1, aes(as.factor(quality), citric.acid, fill = rating)) +
+               geom_boxplot() +
+               xlab("Quality") +
+               ylab("Citric Acid (g / dm^3)") +
+              scale_fill_brewer(type = 'seq', palette = 3),
+             ggplot(data = rw1, aes(as.factor(quality), total.acidity, fill = rating)) +
+               geom_boxplot() +
+               xlab("Quality") +
+               ylab("Total Acidity (g / dm^3)") +
+              scale_fill_brewer(type = 'seq', palette = 4),
+             ncol = 1)
+```
+
+### Description Two
+
+Since from the correlation result, it is known that citric acid and fixed acid have positive correleation in spite of volatile acidity. With the above plot, this characteristics is confirmed.
+
+### Plot Three Wine Quality defined by Rating
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, Plot_Three}
+ggplot(data = subset(rw1, rating != 'perfect'), aes(alcohol, sulphates, color = rating)) +
+  geom_point() +
+  ggtitle('Alcohol vs Sulphates Effect on Wine Quality') +
+  ylab('Sulphates (g / dm^3)') +
+  xlab('Alcohol (% volume)')
+
+```
+
+### Description Three
+
+Since after alcohol, sulphates has the highest correlation level with quality. Therefore alcohol and sulphates level in best and worst wine analysis can confirm the correleation result. And it is good to see the relation in grapically.
+
+
+------
+
+# Reflection
+
+This project was an interesting opportunity to put all the knowledge of the R plotting functionality to explore a real dataset. And dataset itself is already in clean format. It has not missing values.
+The use of correlation helps me a lot to find important variables. 
+Most challenging part of this project for me is multivariate plots and boxplot.
+From this analysis, I can conclude that the major factors for better wine quality is alcohol, acidity and sulphates.
+However it should be noted that rating and quality analysis can be done in a different way.
+
+
+# References
+
+* Correlation of more than two variables: https://stackoverflow.com/questions/5446426/calculate-correlation-for-more-than-two-variables
+
+* Box Plot Tutorial:
+http://www.sthda.com/english/wiki/ggplot2-box-plot-quick-start-guide-r-software-and-data-visualization
+
+* Reading a csv and some basic functions:
+https://stackoverflow.com/questions/3391880/how-to-get-a-csv-file-into-r
+
+* ggplot and qplot
+https://stackoverflow.com/questions/5322836/choosing-between-qplot-and-ggplot-in-ggplot2
+
+
+
